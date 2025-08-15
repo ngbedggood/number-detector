@@ -9,9 +9,13 @@ import SwiftUI
 
 @main
 struct NumberDetectorApp: App {
+    @StateObject var manager = MLModelManager()
+    @StateObject private var viewModel = CanvasViewModel()
+    
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView(viewModel: viewModel)
+                .environmentObject(manager)
         }
     }
 }

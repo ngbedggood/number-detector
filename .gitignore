@@ -13,6 +13,9 @@ public/
 *.entitlements
 functions/
 
+*.mlmodel
+MLModel/
+
 
 Resources/
 
