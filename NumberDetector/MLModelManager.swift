@@ -11,11 +11,14 @@ import SwiftUI
 import Accelerate
 import Vision
 
+import CoreImage
+
 
 class MLModelManager: ObservableObject {
     
     private var classifier: MNISTClassifier?
     @Published var predictedNum: Int
+    @Published var processedImage: UIImage?
     
     init() {
         classifier = try? MNISTClassifier(configuration: .init())
@@ -51,7 +54,18 @@ class MLModelManager: ObservableObject {
                                     bitmapInfo: 0)!
             
             context.draw(image.cgImage!, in: CGRect(x: 0, y: 0, width: width, height: height))
+        
+            // Invert colors in place
+            if let baseAddress = CVPixelBufferGetBaseAddress(buffer) {
+                let ptr = baseAddress.assumingMemoryBound(to: UInt8.self)
+                let count = CVPixelBufferGetHeight(buffer) * CVPixelBufferGetBytesPerRow(buffer)
+                for i in 0..<count {
+                    ptr[i] = 255 - ptr[i] // invert grayscale value
+                }
+            }
+        
             CVPixelBufferUnlockBaseAddress(buffer, .readOnly)
+            
             return buffer
     }
     
@@ -67,6 +81,25 @@ class MLModelManager: ObservableObject {
                 print("Prediction Error: \(error.localizedDescription)")
             }
         }
+    }
+    
+    func checkProcessedImage(image: UIImage){
+        let resized = resizeImage(image)!
+        let pixelBuffer = imageToPixelBuffer(resized)!
+        // Create a CIImage from the CVPixelBuffer
+        let ciImage = CIImage(cvPixelBuffer: pixelBuffer)
+
+        // Create a CIContext to render the CIImage into a CGImage
+        let context = CIContext()
+
+        // Create a CGImage from the CIImage
+        guard let cgImage = context.createCGImage(ciImage, from: ciImage.extent) else {
+            print("Error creating CGImage")
+            return
+        }
+
+        // Create a UIImage from the CGImage
+        processedImage = UIImage(cgImage: cgImage)
     }
     
 }
